@@ -5,12 +5,15 @@ export default class TranscriptSearch extends React.Component {
     super(props);
     this.state = {
       term: '',
-      year: 'Any'
+      year: 'Any',
+      matches: [],
+      isLoading: false
     }
 
     this.handleTermChange = this.handleTermChange.bind(this);
     this.handleYearChange = this.handleYearChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.searchTranscripts = this.searchTranscripts.bind(this);
   }
 
   handleTermChange(event) {
@@ -22,8 +25,26 @@ export default class TranscriptSearch extends React.Component {
   }
 
   handleSubmit(event) {
-    console.log(this.state);
+    this.setState({isLoading: true})
+    this.searchTranscripts();
     event.preventDefault();
+  }
+
+  searchTranscripts() {
+    const realTerm = this.state.term || '*'
+    fetch("http://localhost:8080/api/3/transcripts/search?term=" + realTerm + "&year=" + this.state.year)
+      .then(res => res.json())
+      .then((result) => {
+              console.log(result);
+              this.setState({
+                              matches: result.result.items,
+                              isLoading: false
+                            })
+            },
+            (error) => {
+              console.log(error);
+              this.setState({isLoading: false})
+            });
   }
 
   render() {
@@ -54,6 +75,14 @@ export default class TranscriptSearch extends React.Component {
               </div>
             </form>
           </div>
+        </div>
+
+        <div>
+          <ul>
+            {this.state.matches.map(function (m) {
+              return <li key={m.result.dateTime}>{m.result.dateTime}</li>
+            })}
+          </ul>
         </div>
       </div>
     );
