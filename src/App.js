@@ -6,6 +6,7 @@ import {
   Route,
   Link
 } from "react-router-dom";
+import Transcripts from './transcripts/Transcripts'
 
 function App() {
   return (
@@ -73,21 +74,4 @@ function Bills() {
 
 function Laws() {
   return <h2>Laws</h2>;
-}
-
-function Transcripts() {
-  return (
-    <div>
-      <h2>Transcripts</h2>
-      <TranscriptSearch/>
-    </div>
-  );
-}
-
-class TranscriptSearch extends React.Component {
-  render() {
-    return (
-      <div>transcript search form</div>
-    );
-  }
 }
