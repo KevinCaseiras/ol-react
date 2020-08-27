@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import {useParams} from 'react-router-dom';
 import Hero from '../common/Hero';
 import Moment from 'moment';
+import LoadingIndicator from "../common/LoadingIndicator";
 
 export default function TranscriptView() {
   let [transcript, setTranscript] = useState(null);
@@ -27,7 +28,7 @@ export default function TranscriptView() {
 };
 
 function TranscriptLoading() {
-  return <span>Loading... </span>
+  return <LoadingIndicator/>
 }
 
 function TranscriptInfo(props) {
