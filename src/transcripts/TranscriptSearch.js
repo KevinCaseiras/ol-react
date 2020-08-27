@@ -1,6 +1,7 @@
 import React from "react";
 import {withRouter} from 'react-router'
 import {Link} from "react-router-dom";
+import Moment from 'moment';
 
 class TranscriptSearch extends React.Component {
   constructor(props) {
@@ -8,6 +9,7 @@ class TranscriptSearch extends React.Component {
     this.state = {
       term: '',
       year: 'Any',
+      res: {},
       matches: [],
       isLoading: false
     }
@@ -100,6 +102,7 @@ class TranscriptSearch extends React.Component {
     console.log(result);
     if (this._isMounted) {
       this.setState({
+                      res: result,
                       matches: result.result.items,
                       isLoading: false
                     })
@@ -138,15 +141,28 @@ class TranscriptSearch extends React.Component {
         </div>
 
         <div>
+          <div className="text-center">
+            <span className="font-bold">{this.state.res.total} results found</span>
+          </div>
           <ul>
             {this.state.matches.map(function (m) {
               return (
-                <li key={m.result.dateTime}>
-                  <Link to={`${this.props.location.pathname}/${m.result.dateTime}`}
-                        className="font-bold text-blue-400">
-                    {m.result.dateTime}
-                  </Link>
-                </li>
+                <div key={m.result.dateTime} className="m-2">
+                  <li>
+                    <Link to={`${this.props.location.pathname}/${m.result.dateTime}`}
+                          className="font-bold text-blue-400">
+                      {Moment(m.result.dateTime).format('MMM D, yyyy hh:mm:ss a')}
+                    </Link>
+                    &nbsp;- {m.result.sessionType}
+                  </li>
+                  {m.highlights.text &&
+                  <pre className="m-4 p-2 bg-gray-200">
+                    <span>
+                    {m.highlights.text}
+                    </span>
+                  </pre>
+                  }
+                </div>
               )
             }, this)}
           </ul>
