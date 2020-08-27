@@ -2,13 +2,15 @@ import React from "react";
 import {withRouter} from 'react-router'
 import {Link} from "react-router-dom";
 import Moment from 'moment';
+import Hero from "../common/Hero";
 
 class TranscriptSearch extends React.Component {
   constructor(props) {
     super(props);
+    const initialParams = new URLSearchParams(this.props.location.search);
     this.state = {
-      term: '',
-      year: 'Any',
+      term: initialParams.get('term') || '',
+      year: initialParams.get('year') || 'Any',
       res: {},
       matches: [],
       isLoading: false
@@ -112,6 +114,7 @@ class TranscriptSearch extends React.Component {
   render() {
     return (
       <div>
+        <Hero>Transcripts</Hero>
         <div className="bg-gray-200">
           <div className="p-6">
             <form onSubmit={this.handleSubmit}>

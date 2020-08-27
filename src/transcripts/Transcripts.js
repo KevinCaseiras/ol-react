@@ -1,5 +1,6 @@
 import React from "react";
 import TranscriptSearch from "./TranscriptSearch";
+import TranscriptView from "./TranscriptView"
 import Hero from "../common/Hero";
 import { Route, Switch, useRouteMatch, useParams} from "react-router-dom";
 
@@ -9,7 +10,6 @@ export default function Transcripts() {
 
   return (
     <div>
-      <Hero>Transcripts</Hero>
       <div className="ml-8 mr-8 mb-8">
         <Switch>
           <Route exact path={path}>
@@ -23,13 +23,3 @@ export default function Transcripts() {
   );
 }
 
-function TranscriptView() {
-
-  let { dateTime } = useParams();
-
-  return (
-    <div>
-      transcript view {dateTime}
-    </div>
-  )
-}
