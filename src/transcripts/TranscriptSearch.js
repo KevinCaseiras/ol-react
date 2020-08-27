@@ -1,5 +1,6 @@
 import React from "react";
 import {withRouter} from 'react-router'
+import {Link} from "react-router-dom";
 
 class TranscriptSearch extends React.Component {
   constructor(props) {
@@ -34,6 +35,7 @@ class TranscriptSearch extends React.Component {
    * Searching in this way supports back and forward browser navigation.
    */
   componentDidMount() {
+    console.log(this.props);
     this._isMounted = true;
     this.unlisten = this.props.history.listen((location, action) => {
       const search = location.search;
@@ -129,7 +131,7 @@ class TranscriptSearch extends React.Component {
                 </select>
               </div>
               <div className="m-2">
-                <input type="submit" value="Search" className="p-2 rounded-sm bg-blue-300"/>
+                <input type="submit" value="Search" className="p-2 rounded-sm bg-blue-400"/>
               </div>
             </form>
           </div>
@@ -138,8 +140,15 @@ class TranscriptSearch extends React.Component {
         <div>
           <ul>
             {this.state.matches.map(function (m) {
-              return <li key={m.result.dateTime}>{m.result.dateTime}</li>
-            })}
+              return (
+                <li key={m.result.dateTime}>
+                  <Link to={`${this.props.location.pathname}/${m.result.dateTime}`}
+                        className="font-bold text-blue-400">
+                    {m.result.dateTime}
+                  </Link>
+                </li>
+              )
+            }, this)}
           </ul>
         </div>
       </div>
