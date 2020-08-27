@@ -11,6 +11,13 @@ class TranscriptSearch extends React.Component {
       isLoading: false
     }
 
+    this.availableYears = ['Any'];
+    let yr = new Date().getFullYear();
+    while (yr >= 1993) {
+      this.availableYears.push(yr);
+      yr--;
+    }
+
     this.handleTermChange = this.handleTermChange.bind(this);
     this.handleYearChange = this.handleYearChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -21,12 +28,15 @@ class TranscriptSearch extends React.Component {
     this.handleResultSuccess = this.handleResultSuccess.bind(this);
   }
 
+  /**
+   * Listen to url changes.
+   * When a change occurs, update the state to reflect the search params and perform a search.
+   * Searching in this way supports back and forward browser navigation.
+   */
   componentDidMount() {
     this._isMounted = true;
     this.unlisten = this.props.history.listen((location, action) => {
-      console.log(location);
-
-      const search = this.props.location.search;
+      const search = location.search;
       const params = new URLSearchParams(search);
       this.setState({
                       term: params.get('term') || '',
@@ -34,6 +44,7 @@ class TranscriptSearch extends React.Component {
                     })
       this.searchTranscripts();
     })
+
     // Search when first loading the page
     this.searchTranscripts();
   }
@@ -112,9 +123,9 @@ class TranscriptSearch extends React.Component {
                 <select value={this.state.year}
                         onChange={this.handleYearChange}
                         name="year" className="rounded-sm">
-                  <option>Any</option>
-                  <option>2020</option>
-                  <option>2019</option>
+                  {this.availableYears.map(function (yr) {
+                    return <option key={yr}>{yr}</option>
+                  })}
                 </select>
               </div>
               <div className="m-2">
