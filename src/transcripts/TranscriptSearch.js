@@ -1,178 +1,217 @@
-import React from "react";
-import {withRouter} from 'react-router'
-import {Link} from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Link, useHistory, useLocation, useRouteMatch} from "react-router-dom";
 import Moment from 'moment';
 import Hero from "../common/Hero";
+import LoadingIndicator from "../common/LoadingIndicator";
 
-class TranscriptSearch extends React.Component {
-  constructor(props) {
-    super(props);
-    const initialParams = new URLSearchParams(this.props.location.search);
-    this.state = {
-      term: initialParams.get('term') || '',
-      year: initialParams.get('year') || 'Any',
-      res: {},
-      matches: [],
-      isLoading: false
+
+export default function TranscriptSearch() {
+  const query = useQuery();
+  const history = useHistory();
+  const [term, setTerm] = useState(query.get("term") || '');
+  const [year, setYear] = useState(query.get('year') || 'Any');
+  const [res, setRes] = useState({});
+  const [isLoading, setLoading] = useState(true);
+  let _isMounted = true;
+
+  useEffect(() => {
+    // Listen for URL changes, update term and year to the query param values when a change occurs and search transcripts.
+    const unlisten = history.listen((location, action) => {
+      saveQueryParams(location);
+    });
+
+    saveQueryParams(history.location);
+
+    return () => {
+      unlisten();
+      _isMounted = false;
     }
+  }, [])
 
-    this.availableYears = ['Any'];
-    let yr = new Date().getFullYear();
-    while (yr >= 1993) {
-      this.availableYears.push(yr);
-      yr--;
+  useEffect(() => {
+    console.log("Term or year updated")
+    searchTranscripts(term || '', year || 'Any');
+  }, [term, year]);
+
+  function saveQueryParams(location) {
+    const params = new URLSearchParams(location.search);
+    setTerm(params.get('term') || '');
+    setYear(params.get('year') || 'Any');
+  }
+
+  function searchTranscripts(term, year) {
+    console.log(`Searching with term '${term}' and year '${year}'`)
+    setLoading(true);
+    const realTerm = term || '*'
+    if (isNaN(year)) {
+      searchAllYears(realTerm);
+    } else {
+      searchSingleYear(realTerm, year);
     }
-
-    this.handleTermChange = this.handleTermChange.bind(this);
-    this.handleYearChange = this.handleYearChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.searchTranscripts = this.searchTranscripts.bind(this);
-    this.updateRequestParams = this.updateRequestParams.bind(this);
-    this.searchAllYears = this.searchAllYears.bind(this);
-    this.searchSingleYear = this.searchSingleYear.bind(this);
-    this.handleResultSuccess = this.handleResultSuccess.bind(this);
   }
 
-  /**
-   * Listen to url changes.
-   * When a change occurs, update the state to reflect the search params and perform a search.
-   * Searching in this way supports back and forward browser navigation.
-   */
-  componentDidMount() {
-    console.log(this.props);
-    this._isMounted = true;
-    this.unlisten = this.props.history.listen((location, action) => {
-      const search = location.search;
-      const params = new URLSearchParams(search);
-      this.setState({
-                      term: params.get('term') || '',
-                      year: params.get('year') || 'Any'
-                    })
-      this.searchTranscripts();
-    })
-
-    // Search when first loading the page
-    this.searchTranscripts();
+  function searchAllYears(realTerm) {
+    fetch("http://localhost:8080/api/3/transcripts/search?term=" + realTerm)
+      .then(res => res.json())
+      .then(handleResultSuccess)
   }
 
-  componentWillUnmount() {
-    this._isMounted = false;
-    this.unlisten();
+  function searchSingleYear(realTerm, year) {
+    fetch("http://localhost:8080/api/3/transcripts/" + year + "/search?term=" + realTerm)
+      .then(res => res.json())
+      .then(handleResultSuccess)
   }
 
-  handleTermChange(event) {
-    this.setState({term: event.target.value});
+  function handleResultSuccess(result) {
+    console.log(result);
+    if (_isMounted) {
+      setRes(result);
+      setLoading(false);
+    }
   }
 
-  handleYearChange(event) {
-    this.setState({year: event.target.value})
+  function onFormSubmit(newTerm, newYear) {
+    console.log("ON FORM SUBMIT");
+    history.push(`${history.location.pathname}?term=${newTerm}&year=${newYear}`);
   }
 
-  handleSubmit(event) {
-    this.setState({isLoading: true})
-    this.updateRequestParams();
+  // Switch between showing search results and loading indicator.
+  const body = () => {
+    if (isLoading) {
+      return <LoadingIndicator/>
+    } else {
+      return <SearchResults matches={res.result.items} total={res.total}/>
+    }
+  }
+
+  return (
+    <div>
+      <Hero>Transcripts</Hero>
+      <SearchForm term={term} year={year} onFormSubmit={onFormSubmit}/>
+      {body()}
+    </div>
+  );
+}
+
+// A custom hook that builds on useLocation to parse
+// the query string for you.
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
+function SearchForm(props) {
+  const [dirtyTerm, setDirtyTerm] = useState(props.term);
+  const [dirtyYear, setDirtyYear] = useState(props.year);
+  const [availableYears, setAvailableYears] = useState([]);
+
+  useEffect(() => {
+    setAvailableYears(initAvailableYears());
+  }, [])
+
+  useEffect(() => {
+    setDirtyTerm(props.term);
+    setDirtyYear(props.year);
+  }, [props.term, props.year])
+
+  function handleSubmit(event) {
+    props.onFormSubmit(dirtyTerm, dirtyYear);
     event.preventDefault();
   }
 
-  updateRequestParams() {
-    this.props.history.push(`${window.location.pathname}?term=${this.state.term}&year=${this.state.year}`);
-  }
-
-  searchTranscripts() {
-    console.log(this.state);
-    const realTerm = this.state.term || '*'
-    if (isNaN(this.state.year)) {
-      this.searchAllYears(realTerm);
-    } else {
-      this.searchSingleYear(realTerm);
+  function initAvailableYears() {
+    let availableYears = ['Any'];
+    let yr = new Date().getFullYear();
+    while (yr >= 1993) {
+      availableYears.push(yr);
+      yr--;
     }
+    return availableYears;
   }
 
-  searchAllYears(realTerm) {
-    fetch("http://localhost:8080/api/3/transcripts/search?term=" + realTerm + "&year=" + this.state.year)
-      .then(res => res.json())
-      .then(this.handleResultSuccess)
-  }
-
-  searchSingleYear(realTerm) {
-    fetch("http://localhost:8080/api/3/transcripts/" + this.state.year + "/search?term=" + realTerm)
-      .then(res => res.json())
-      .then(this.handleResultSuccess)
-  }
-
-  handleResultSuccess(result) {
-    console.log(result);
-    if (this._isMounted) {
-      this.setState({
-                      res: result,
-                      matches: result.result.items,
-                      isLoading: false
-                    })
-    }
-  }
-
-  render() {
-    return (
-      <div>
-        <Hero>Transcripts</Hero>
-        <div className="bg-gray-200">
-          <div className="p-6">
-            <form onSubmit={this.handleSubmit}>
-              <div className="m-2">
-                <label className="mr-2">Search for transcripts:</label>
-                <input type="text" name="term"
-                       value={this.state.term}
-                       onChange={this.handleTermChange}
-                       placeholder="e.g. &quot;a phrase&quot; or text"
-                       className="rounded-sm w-1/2"/>
-              </div>
-              <div className="m-2">
-                <label className="mr-2">Published Year:</label>
-                <select value={this.state.year}
-                        onChange={this.handleYearChange}
-                        name="year" className="rounded-sm">
-                  {this.availableYears.map(function (yr) {
-                    return <option key={yr}>{yr}</option>
-                  })}
-                </select>
-              </div>
-              <div className="m-2">
-                <input type="submit" value="Search" className="p-2 rounded-sm bg-blue-400"/>
-              </div>
-            </form>
-          </div>
+  return (
+    <div className="bg-gray-200 p-6">
+      <form onSubmit={handleSubmit}>
+        <div className="m-2">
+          <label className="mr-2">Search for transcripts:</label>
+          <input type="text"
+                 value={dirtyTerm} name="term"
+                 onChange={e => setDirtyTerm(e.target.value)}
+                 placeholder="e.g. &quot;a phrase&quot; or text"
+                 className="rounded-sm w-1/2"/>
         </div>
-
-        <div>
-          <div className="text-center">
-            <span className="font-bold">{this.state.res.total} results found</span>
-          </div>
-          <ul>
-            {this.state.matches.map(function (m) {
-              return (
-                <div key={m.result.dateTime} className="m-2">
-                  <li>
-                    <Link to={`${this.props.location.pathname}/${m.result.dateTime}`}
-                          className="font-bold text-blue-400">
-                      {Moment(m.result.dateTime).format('MMM D, yyyy hh:mm:ss a')}
-                    </Link>
-                    &nbsp;- {m.result.sessionType}
-                  </li>
-                  {m.highlights.text &&
-                  <pre className="m-4 p-2 bg-gray-200">
-                    <span>
-                    {m.highlights.text}
-                    </span>
-                  </pre>
-                  }
-                </div>
-              )
-            }, this)}
-          </ul>
+        <div className="m-2">
+          <label className="mr-2">Published Year:</label>
+          <select value={dirtyYear}
+                  onChange={e => setDirtyYear(e.target.value)}
+                  name="year" className="rounded-sm">
+            {availableYears.map(function (yr) {
+              return <option key={yr}>{yr}</option>
+            })}
+          </select>
         </div>
-      </div>
-    );
-  }
+        <div className="m-2">
+          <input type="submit" value="Search" className="p-2 rounded-sm bg-blue-400"/>
+        </div>
+      </form>
+    </div>
+  )
 }
 
-export default withRouter(TranscriptSearch)
+function SearchResults(props) {
+  const [matches, setMatches] = useState(props.matches);
+  const [totalMatches, setTotalMatches] = useState(props.total);
+
+  useEffect(() => {
+    setMatches(props.matches);
+    setTotalMatches(props.total);
+  }, [props.matches, props.total])
+
+  return (
+    <div>
+      <div className="text-center">
+        <span className="font-bold">{totalMatches} results found</span>
+      </div>
+      <div>
+        <ul>
+          {matches.map(function (m) {
+            return <SearchResultLink key={m.result.dateTime} match={m}/>
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function SearchResultLink(props) {
+  const {path, url} = useRouteMatch();
+  const [match] = useState(props.match);
+
+  return (
+    <div className="m-2">
+      <li>
+        <Link to={`${path}/${match.result.dateTime}`}
+              className="font-bold text-blue-400">
+          {Moment(match.result.dateTime).format('MMM D, yyyy hh:mm:ss a')}
+        </Link>
+        &nbsp;- {match.result.sessionType}
+      </li>
+      <SearchResultHighlights highlightText={match.highlights.text}/>
+    </div>
+  )
+}
+
+function SearchResultHighlights(props) {
+  const [highlightText] = useState(props.highlightText);
+
+  if (highlightText) {
+    return (
+      <div>
+        <pre className="m-4 p-2 bg-gray-200">
+          <span>{highlightText}</span>
+        </pre>
+      </div>
+    )
+  } else {
+    return null
+  }
+}

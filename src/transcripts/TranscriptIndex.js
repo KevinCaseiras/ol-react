@@ -4,7 +4,7 @@ import TranscriptView from "./TranscriptView"
 import Hero from "../common/Hero";
 import { Route, Switch, useRouteMatch, useParams} from "react-router-dom";
 
-export default function Transcripts() {
+export default function TranscriptIndex() {
 
   let {path, url} = useRouteMatch();
 

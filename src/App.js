@@ -6,7 +6,7 @@ import {
   Route,
   Link
 } from "react-router-dom";
-import Transcripts from './transcripts/Transcripts'
+import TranscriptIndex from './transcripts/TranscriptIndex'
 
 function App() {
   return (
@@ -54,7 +54,7 @@ function App() {
                   <Laws/>
                 </Route>
                 <Route path="/transcripts">
-                  <Transcripts/>
+                  <TranscriptIndex/>
                 </Route>
               </Switch>
             </div>
