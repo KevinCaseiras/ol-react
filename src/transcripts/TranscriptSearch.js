@@ -29,7 +29,6 @@ export default function TranscriptSearch() {
   }, [])
 
   useEffect(() => {
-    console.log("Term or year updated")
     searchTranscripts(term || '', year || 'Any');
   }, [term, year]);
 
@@ -40,7 +39,6 @@ export default function TranscriptSearch() {
   }
 
   function searchTranscripts(term, year) {
-    console.log(`Searching with term '${term}' and year '${year}'`)
     setLoading(true);
     const realTerm = term || '*'
     if (isNaN(year)) {
@@ -71,7 +69,6 @@ export default function TranscriptSearch() {
   }
 
   function onFormSubmit(newTerm, newYear) {
-    console.log("ON FORM SUBMIT");
     history.push(`${history.location.pathname}?term=${newTerm}&year=${newYear}`);
   }
 
@@ -203,11 +200,15 @@ function SearchResultLink(props) {
 function SearchResultHighlights(props) {
   const [highlightText] = useState(props.highlightText);
 
+  function formatHighlightText(highlightText) {
+    return {__html: highlightText};
+  }
+
   if (highlightText) {
     return (
       <div>
         <pre className="m-4 p-2 bg-gray-200">
-          <span>{highlightText}</span>
+          <span dangerouslySetInnerHTML={formatHighlightText(highlightText)}/>
         </pre>
       </div>
     )
