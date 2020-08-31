@@ -17,7 +17,6 @@ export default function TranscriptSearch() {
                                      })
   const [res, setRes] = useState({});
   const [isLoading, setLoading] = useState(true);
-  let _isMounted = true; // TODO is this used correctly?
 
   useEffect(() => {
     // Listen for URL changes, update term and year to the query param values when a change occurs and search transcripts.
@@ -27,7 +26,6 @@ export default function TranscriptSearch() {
 
     return () => {
       unlisten();
-      _isMounted = false;
     }
   }, [])
 
@@ -74,10 +72,8 @@ export default function TranscriptSearch() {
 
   function handleSearchResult(result) {
     console.log(result);
-    if (_isMounted) {
-      setRes(result);
-      setLoading(false);
-    }
+    setRes(result);
+    setLoading(false);
   }
 
   function setUrlSearchParams(term, year, limit, offset) {
@@ -85,7 +81,8 @@ export default function TranscriptSearch() {
   }
 
   function onFormSubmit(newTerm, newYear) {
-    setUrlSearchParams(newTerm, newYear, query.limit, query.offset);
+    // Reset offset to 1 on a new search so we start at page 1.
+    setUrlSearchParams(newTerm, newYear, query.limit, 1);
   }
 
   function handlePageChange(newLimit, newOffset) {
