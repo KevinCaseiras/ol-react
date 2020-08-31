@@ -7,8 +7,6 @@ export default function Pagination(props) {
   const [offsetStart, setOffsetStart] = useState(props.offset);
   const [total, setTotal] = useState(props.total);
 
-  console.log(props);
-
   useEffect(() => {
     setLimit(props.limit);
     setOffsetStart(props.offset);

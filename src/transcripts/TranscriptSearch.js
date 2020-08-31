@@ -7,12 +7,13 @@ import Pagination from "../common/Pagination";
 
 
 export default function TranscriptSearch() {
+  const urlParams = useQuery();
   const history = useHistory();
   const [query, setQuery] = useState({
-                                       term: '',
-                                       year: 'Any',
-                                       limit: 25,
-                                       offset: 1
+                                       term: urlParams.get('term') || '',
+                                       year: urlParams.get('year') || 'Any',
+                                       limit: urlParams.get('limit') || 25,
+                                       offset: urlParams.get('offset') || 1
                                      })
   const [res, setRes] = useState({});
   const [isLoading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function TranscriptSearch() {
     }
   }, [])
 
-  // Whenever the query object changes, perform a search.
+  // Whenever the query object is updated, perform a search.
   useEffect(() => {
     searchTranscripts(query);
   }, [query]);
