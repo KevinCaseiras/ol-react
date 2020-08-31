@@ -1,3 +1,16 @@
+## Open Legislation transcript demo in ReactJS.
+
+This implementation uses the new react hooks feature in its components.
+
+Relavant code is in `src/App.js` and `src/transcripts`
+
+If you want to run this locally, follow the instructions below, additionally, you must have openleg running locally at the same time.
+
+<br/>
+<br/>
+
+<hr/>
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
