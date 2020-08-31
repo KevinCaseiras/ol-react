@@ -3,24 +3,26 @@ import {Link, useHistory, useLocation, useRouteMatch} from "react-router-dom";
 import Moment from 'moment';
 import Hero from "../common/Hero";
 import LoadingIndicator from "../common/LoadingIndicator";
+import Pagination from "../common/Pagination";
 
 
 export default function TranscriptSearch() {
-  const query = useQuery();
   const history = useHistory();
-  const [term, setTerm] = useState(query.get("term") || '');
-  const [year, setYear] = useState(query.get('year') || 'Any');
+  const [query, setQuery] = useState({
+                                       term: '',
+                                       year: 'Any',
+                                       limit: 25,
+                                       offset: 1
+                                     })
   const [res, setRes] = useState({});
   const [isLoading, setLoading] = useState(true);
-  let _isMounted = true;
+  let _isMounted = true; // TODO is this used correctly?
 
   useEffect(() => {
     // Listen for URL changes, update term and year to the query param values when a change occurs and search transcripts.
     const unlisten = history.listen((location, action) => {
-      saveQueryParams(location);
+      syncSearchParamsToState(location);
     });
-
-    saveQueryParams(history.location);
 
     return () => {
       unlisten();
@@ -28,39 +30,48 @@ export default function TranscriptSearch() {
     }
   }, [])
 
+  // Whenever the query object changes, perform a search.
   useEffect(() => {
-    searchTranscripts(term || '', year || 'Any');
-  }, [term, year]);
+    searchTranscripts(query);
+  }, [query]);
 
-  function saveQueryParams(location) {
+  /**
+   * Updates the query state object to be equal to the url search parameters.
+   * @param location
+   */
+  function syncSearchParamsToState(location) {
     const params = new URLSearchParams(location.search);
-    setTerm(params.get('term') || '');
-    setYear(params.get('year') || 'Any');
+    setQuery({
+               term: params.get('term') || '',
+               year: params.get('year') || 'Any',
+               limit: params.get('limit') || 25,
+               offset: params.get('offset') || 1
+             });
   }
 
-  function searchTranscripts(term, year) {
+  function searchTranscripts(params) {
     setLoading(true);
-    const realTerm = term || '*'
-    if (isNaN(year)) {
-      searchAllYears(realTerm);
+    const realTerm = params.term || '*'
+    if (isNaN(params.year)) {
+      searchAllYears(realTerm, params.limit, params.offset);
     } else {
-      searchSingleYear(realTerm, year);
+      searchSingleYear(realTerm, params.year, params.limit, params.offset);
     }
   }
 
-  function searchAllYears(realTerm) {
-    fetch("http://localhost:8080/api/3/transcripts/search?term=" + realTerm)
+  function searchAllYears(realTerm, limit, offset) {
+    fetch(`http://localhost:8080/api/3/transcripts/search?term=${realTerm}&limit=${limit}&offset=${offset}`)
       .then(res => res.json())
-      .then(handleResultSuccess)
+      .then(handleSearchResult)
   }
 
-  function searchSingleYear(realTerm, year) {
-    fetch("http://localhost:8080/api/3/transcripts/" + year + "/search?term=" + realTerm)
+  function searchSingleYear(realTerm, year, limit, offset) {
+    fetch(`http://localhost:8080/api/3/transcripts/${year}/search?term=${realTerm}&limit=${limit}&offset=${offset}`)
       .then(res => res.json())
-      .then(handleResultSuccess)
+      .then(handleSearchResult)
   }
 
-  function handleResultSuccess(result) {
+  function handleSearchResult(result) {
     console.log(result);
     if (_isMounted) {
       setRes(result);
@@ -68,8 +79,16 @@ export default function TranscriptSearch() {
     }
   }
 
+  function setUrlSearchParams(term, year, limit, offset) {
+    history.push(`${history.location.pathname}?term=${term}&year=${year}&limit=${limit}&offset=${offset}`);
+  }
+
   function onFormSubmit(newTerm, newYear) {
-    history.push(`${history.location.pathname}?term=${newTerm}&year=${newYear}`);
+    setUrlSearchParams(newTerm, newYear, query.limit, query.offset);
+  }
+
+  function handlePageChange(newLimit, newOffset) {
+    setUrlSearchParams(query.term, query.year, newLimit, newOffset);
   }
 
   // Switch between showing search results and loading indicator.
@@ -77,14 +96,20 @@ export default function TranscriptSearch() {
     if (isLoading) {
       return <LoadingIndicator/>
     } else {
-      return <SearchResults matches={res.result.items} total={res.total}/>
+      return (
+        <>
+          <Pagination limit={query.limit} offset={query.offset} total={res.total}
+                      handlePageChange={handlePageChange}/>
+          <SearchResults matches={res.result.items} total={res.total}/>
+        </>
+      )
     }
   }
 
   return (
     <div>
       <Hero>Transcripts</Hero>
-      <SearchForm term={term} year={year} onFormSubmit={onFormSubmit}/>
+      <SearchForm term={query.term} year={query.year} onFormSubmit={onFormSubmit}/>
       {body()}
     </div>
   );
